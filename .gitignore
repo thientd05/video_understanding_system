@@ -1,1 +1,4 @@
 llama.cpp
+env/
+*.gguf
+*.whl
