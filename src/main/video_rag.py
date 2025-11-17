@@ -22,9 +22,9 @@ class VideoRAG:
         
         self.llm = Llama(
             model_path=model_path,
-            n_ctx=4096,
+            n_ctx=2048,
             n_threads=4,
-            n_gpu_layers=12
+            n_gpu_layers=32
         )
     
     def _retrieve_context(self, question):
