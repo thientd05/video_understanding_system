@@ -7,18 +7,8 @@ from src.utils.choose_frame import choose_frame
 
 
 class VideoRAG:
-    """
-    Class để thực hiện RAG (Retrieval Augmented Generation) trên video
-    Nhận vào truy vấn của người dùng và trả về câu trả lời
-    """
     
     def __init__(self, embedding_manager):
-        """
-        Khởi tạo VideoRAG
-        
-        Args:
-            embedding_manager (EmbeddingManager): Instance của EmbeddingManager
-        """
         self.embedding_manager = embedding_manager
         self.embed_model = embedding_manager.get_embed_model()
         self.frames = embedding_manager.get_frames()
@@ -27,7 +17,6 @@ class VideoRAG:
         self.transcriptions_database = embedding_manager.get_transcriptions_database()
         self.texts_database = embedding_manager.get_texts_database()
         
-        # Load LLM model
         script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         model_path = os.path.join(script_dir, "gemma-3-4b-it-Q4_K_M.gguf")
         
@@ -39,15 +28,6 @@ class VideoRAG:
         )
     
     def _retrieve_context(self, question):
-        """
-        Sử dụng LLM để xác định các thông tin cần retrieve từ question
-        
-        Args:
-            question (str): Câu hỏi của người dùng
-            
-        Returns:
-            dict: Chứa ASR, DET, OCR keys
-        """
         system_prompt_retrieve = "You are an helpful assistant, always follow my instructions. To answer the question step by step, you can provide your retrieve request to assist you by the following json format:\n"
         
         system_prompt_retrieve += '''{
@@ -101,20 +81,10 @@ class VideoRAG:
         return info
     
     def _search_and_build_prompt(self, info):
-        """
-        Tìm kiếm và xây dựng prompt dựa trên thông tin retrieve
-        
-        Args:
-            info (dict): Chứa ASR, DET, OCR info
-            
-        Returns:
-            tuple: (asr_prompt, ocr_prompt, chosen_frame)
-        """
         asr_prompt = ""
         ocr_prompt = ""
         chosen_frame = self.frames[::len(self.frames) // 5]
         
-        # Xử lý ASR
         if info.get("ASR") is not None:
             embed = self.embed_model.encode(
                 info["ASR"], 
@@ -125,7 +95,6 @@ class VideoRAG:
             for i in indices[0]:
                 asr_prompt += self.transcriptions[i] + "\n"
         
-        # Xử lý OCR
         if info.get("OCR") is not None:
             for text in info["OCR"]:
                 embed = self.embed_model.encode(
@@ -137,38 +106,23 @@ class VideoRAG:
                 for i in indices[0]:
                     ocr_prompt += self.texts[i] + "\n"
         
-        # Xử lý DET (Detection)
         if info.get("DET") is not None:
             chosen_frame = choose_frame(frames=self.frames, objects=info["DET"])
             chosen_frame = chosen_frame[::len(chosen_frame)//5]
             chosen_frame = chosen_frame[:5]
         
-        # Giải phóng GPU memory sau khi embedding xong
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         
         return asr_prompt, ocr_prompt, chosen_frame
     
     def answer_question(self, question, streaming=False):
-        """
-        Trả lời câu hỏi dựa trên nội dung video
-        
-        Args:
-            question (str): Câu hỏi của người dùng
-            streaming (bool): True để stream output, False để trả về toàn bộ response
-            
-        Returns:
-            str: Câu trả lời hoặc generator (nếu streaming=True)
-        """
         formatted_question = "Question: " + question
         
-        # Bước 1: Retrieve - xác định thông tin cần lấy
         info = self._retrieve_context(formatted_question)
         
-        # Bước 2: Search and build prompt
         asr_prompt, ocr_prompt, chosen_frame = self._search_and_build_prompt(info)
         
-        # Bước 3: Tạo system prompt cho bước answer
         answer_system_prompt = "You are an helpful assistant, always follow my instructions. The users are attempting to ask you some questions relevant to the video. The information about the question is retrieved as follows:\n"
         
         if len(asr_prompt) > 0:
@@ -178,7 +132,6 @@ class VideoRAG:
         
         answer_system_prompt += "You got some images in the video that will help you get more information. Read all the information carefully and think step by step, and then anwser the question."
         
-        # Bước 5: Gọi LLM để lấy câu trả lời
         messages = [
             {
                 "role": "system",
@@ -200,7 +153,6 @@ class VideoRAG:
         ]
         
         if streaming:
-            # Streaming mode - return generator
             response = self.llm.create_chat_completion(
                 messages=messages,
                 stream=True
@@ -215,7 +167,6 @@ class VideoRAG:
             
             return stream_generator()
         else:
-            # Non-streaming mode - return full response
             response = self.llm.create_chat_completion(
                 messages=messages,
                 stream=False
