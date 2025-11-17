@@ -24,21 +24,15 @@ class VideoRAGInterface:
             return f"❌ File không tồn tại: {video_path}"
         
         try:
-            print(f"[INFO] Loading video: {video_path}")
-            
-            self.embedding_manager = EmbeddingManager(video_path)
-            print("[INFO] EmbeddingManager initialized")
-            
+            self.embedding_manager = EmbeddingManager(video_path)   
             self.video_rag = VideoRAG(self.embedding_manager)
-            print("[INFO] VideoRAG initialized")
             
             return f"✅ Video loaded successfully!\nFrames: {len(self.embedding_manager.get_frames())}\nTranscriptions: {len(self.embedding_manager.get_transcriptions())}\nOCR texts: {len(self.embedding_manager.get_texts())}"
             
         except Exception as e:
-            print(f"[ERROR] Failed to load video: {str(e)}")
             return f"❌ Lỗi khi load video: {str(e)}"
     
-    def answer_question(self, question: str) -> str:
+    def answer_question(self, question: str) -> str: # type: ignore
         if self.video_rag is None:
             return "❌ Vui lòng load video trước!"
         
@@ -48,17 +42,12 @@ class VideoRAGInterface:
         question = question.strip()
         
         try:
-            print(f"\n[INFO] Processing question: {question}")
-            
             response_text = ""
             for token in self.video_rag.answer_question(question, streaming=True):
                 response_text += token
                 yield response_text
             
-            print("[INFO] Answer completed")
-            
         except Exception as e:
-            print(f"[ERROR] Failed to answer question: {str(e)}")
             yield f"❌ Lỗi khi trả lời: {str(e)}"
 
 
@@ -72,7 +61,6 @@ def create_interface():
     try:
         with open(css_file_path, "r", encoding="utf-8") as f:
             custom_css = f.read()
-        print(f"[INFO] Loaded CSS from {css_file_path}")
     except FileNotFoundError:
         print(f"[WARNING] Could not find styles.css at {css_file_path}. Using default styles.")
     except Exception as e:
@@ -127,9 +115,6 @@ def create_interface():
                     lines=2,
                     scale=4
                 )
-                
-                send_btn = gr.Button("📤 Send", variant="primary", scale=1, visible=False)
-        
         
         def load_video_handler(video_file):
             if video_file is None:

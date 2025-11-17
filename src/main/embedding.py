@@ -18,7 +18,6 @@ class EmbeddingManager:
             self.frames.append(np.zeros(self.frames[0].shape, dtype=np.uint8))
         
         self.transcriptions = transcribe(video_path)
-        
         self.texts = ocr_frames(frames=self.frames)
         
         self.transcriptions_embed = None
