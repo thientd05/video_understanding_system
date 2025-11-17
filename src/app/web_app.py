@@ -110,10 +110,11 @@ def create_interface():
                 
                 question_input = gr.Textbox(
                     label="Your Question",
-                    placeholder="Ask anything about the video",
+                    placeholder="Ask anything about the video (Press Enter to send)",
                     interactive=True,
                     lines=2,
-                    scale=4
+                    scale=4,
+                    max_lines=5
                 )
         
         def load_video_handler(video_file):
@@ -136,24 +137,32 @@ def create_interface():
             
             new_history += "**🤖 Assistant:**\n\n"
             
+            # Store the final response
+            final_response = ""
+            
+            # Stream the response
             for streamed_response in rag_interface.answer_question(question):
+                final_response = streamed_response  # Keep updating with latest
                 display_history = new_history + streamed_response
                 yield display_history, ""
             
-            final_history = new_history + list(rag_interface.answer_question(question))[-1] + "\n\n---\n"
+            # Add separator after complete response
+            final_history = new_history + final_response + "\n\n---\n"
             yield final_history, ""
             
         
         load_btn.click(
             fn=load_video_handler,
             inputs=[video_file_picker],
-            outputs=[load_status]
+            outputs=[load_status],
+            #show_progress="hidden"
         )
         
         question_input.submit(
             fn=answer_question_handler,
             inputs=[question_input, chat_history],
-            outputs=[chat_history, question_input]
+            outputs=[chat_history, question_input],
+            #show_progress="hidden"
         )
     
     return interface
