@@ -1,5 +1,5 @@
 import easyocr
-from video_processing import video_processing
+from src.utils.video_processing import video_processing
 
 def ocr_frames(frames: list) -> list:
     ans =[]

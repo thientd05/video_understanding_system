@@ -32,5 +32,3 @@ def video_processing(video_path: str) -> list:
     return ans
 
         
-
-

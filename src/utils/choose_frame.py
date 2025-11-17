@@ -2,7 +2,7 @@ import torch
 import clip
 import cv2
 from PIL import Image
-from video_processing import video_processing
+from src.utils.video_processing import video_processing
 
 print(clip.__file__)
 
@@ -53,14 +53,3 @@ def choose_frame(frames: list, objects: list, threshold=0.2, batch_size=32):
                 ans.append(f)
 
     return ans
-
-
-frames = video_processing("test2.mp4")
-
-later = choose_frame(frames, ["a photo of person","a photo of a human", "a photo of a dog"])
-
-print("number of chosen frame: " + str(len(later)))
-
-image = Image.fromarray(later[5])
-
-image.show()

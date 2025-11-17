@@ -2,3 +2,5 @@ llama.cpp
 env/
 *.gguf
 *.whl
+*.jpg
+*.png
