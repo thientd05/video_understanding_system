@@ -4,7 +4,7 @@
 
 ## 🚀 Cách chạy
 
-### Option 1: Web Interface (Gradio) - **Khuyến nghị cho Ubuntu**
+### Web Interface (Gradio) - **Khuyến nghị dùng Ubuntu**
 
 ```bash
 cd /home/thienta/HUST_20235839/AI/video/memory
@@ -13,31 +13,17 @@ cd /home/thienta/HUST_20235839/AI/video/memory
 
 Sau đó mở browser và truy cập: **http://localhost:7860**
 
-### Option 2: Command Line Interface
-
-```bash
-cd /home/thienta/HUST_20235839/AI/video/memory
-PYTHONPATH=$(pwd) ./env/bin/python src/main/main.py --path <video_path> --question "<your_question>"
-```
-
-**Ví dụ:**
-```bash
-PYTHONPATH=$(pwd) ./env/bin/python src/main/main.py \
-  --path test2.mp4 \
-  --question "what did the man say in this video?"
-```
 
 ## 📱 Web Interface Features
 
 ### Video Loading
-- 📁 Nhập đường dẫn tới file video hoặc sử dụng file picker
+- 📁 Upload your video file
 - 🔄 Load & Initialize - tải video và khởi tạo embedding model
 - ✅ Status indicator - hiển thị trạng thái load
 
 ### Chat Interface
 - 💬 Chat History - hiển thị toàn bộ lịch sử chat
-- ❓ Question Input - nhập câu hỏi về video
-- 📤 Send Question - gửi câu hỏi (hoặc nhấn Enter)
+- ❓ Question Input - nhập và gửi câu hỏi về video
 - 🤖 Real-time Streaming - xem từng token được sinh ra
 
 ### Features
@@ -53,12 +39,11 @@ PYTHONPATH=$(pwd) ./env/bin/python src/main/main.py \
 ```
 src/
 ├── main/
-│   ├── main.py           # Entry point cho CLI
-│   ├── embedding.py      # EmbeddingManager - xử lý embedding
-│   └── video_rag.py      # VideoRAG - RAG + LLM integration
+│   ├── embedding.py      # Xử lý embedding
+│   └── video_rag.py      # VideoRAG
 ├── app/
-│   ├── app.py            # PyQt6 Desktop App (optional)
-│   └── web_app.py        # Gradio Web Interface (recommended)
+│   ├── styles.css        # Css for UI
+│   └── web_app.py        # Gradio Web Interface
 └── utils/
     ├── asr.py            # Speech-to-text
     ├── ocr.py            # Optical Character Recognition
@@ -116,33 +101,14 @@ src/
    Watch: Answer streams in real-time
    ```
 
-### CLI
-
-```bash
-# Simple question
-./env/bin/python src/main/main.py \
-  --path video.mp4 \
-  --question "Summarize the video"
-
-# With streaming output
-./env/bin/python src/main/main.py \
-  --path video.mp4 \
-  --question "What are the main points?" \
-  --streaming True
-```
-
 ## 🎯 Tips
 
-- **First load**: Sẽ mất 1-5 phút tùy video length
+- **First load**: Sẽ mất 10-20s tùy video length
 - **GPU Memory**: Nếu hết GPU memory, hãy giảm `n_gpu_layers` trong `VideoRAG`
 - **Large Videos**: Chia video thành các phần nhỏ hơn
 - **Accuracy**: Prompt engineering ảnh hưởng đến chất lượng câu trả lời
 
 ## 🐛 Troubleshooting
-
-### PyQt6 App không mở trên Ubuntu
-- ✅ Dùng Web Interface (Gradio) thay vào - nó hoạt động tốt hơn
-- Nếu cần desktop app, cài X11: `sudo apt-get install xvfb`
 
 ### GPU Out of Memory
 - Giảm `n_gpu_layers` từ 12 xuống 8-10
@@ -150,16 +116,15 @@ src/
 
 ### Video load không thành công
 - Kiểm tra format video: MP4, AVI, MOV, MKV
-- Kiểm tra đường dẫn file có đúng không
 - Thử convert video: `ffmpeg -i input.video -c:v libx264 output.mp4`
 
 ## 📊 Performance
 
 | Task | Time | GPU Memory |
 |------|------|-----------|
-| Load Video (8 frames) | 2-3 min | ~4GB |
-| First Answer | 1-2 min | ~5-6GB |
-| Subsequent Answers | 30-60 sec | ~5-6GB |
+| Load Video (8 frames) | 8-10 sec | ~4GB |
+| First Answer | 6-9 sec | ~5-6GB |
+| Subsequent Answers | 3-6 sec | ~5-6GB |
 
 ## 📚 References
 
@@ -167,11 +132,3 @@ src/
 - [Sentence Transformers](https://www.sbert.net/)
 - [FAISS](https://github.com/facebookresearch/faiss)
 - [llama-cpp-python](https://github.com/abetlen/llama-cpp-python)
-
-## 📄 License
-
-MIT
-
----
-
-**Made with ❤️ using AI**

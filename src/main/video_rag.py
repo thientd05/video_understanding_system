@@ -149,12 +149,6 @@ class VideoRAG:
         
         return asr_prompt, ocr_prompt, chosen_frame
     
-    def _save_frames_as_images(self, frames):
-        """Lưu frames thành các file ảnh"""
-        for i, frame in enumerate(frames):
-            image = Image.fromarray(frame)
-            image.save(f"{i}.jpg")
-    
     def answer_question(self, question, streaming=False):
         """
         Trả lời câu hỏi dựa trên nội dung video
@@ -174,10 +168,7 @@ class VideoRAG:
         # Bước 2: Search and build prompt
         asr_prompt, ocr_prompt, chosen_frame = self._search_and_build_prompt(info)
         
-        # Bước 3: Lưu frames thành ảnh
-        self._save_frames_as_images(chosen_frame)
-        
-        # Bước 4: Tạo system prompt cho bước answer
+        # Bước 3: Tạo system prompt cho bước answer
         answer_system_prompt = "You are an helpful assistant, always follow my instructions. The users are attempting to ask you some questions relevant to the video. The information about the question is retrieved as follows:\n"
         
         if len(asr_prompt) > 0:
