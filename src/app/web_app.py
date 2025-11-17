@@ -23,12 +23,6 @@ class VideoRAGInterface:
     def load_video(self, video_path: str) -> str:
         """
         Load video và khởi tạo embedding
-        
-        Args:
-            video_path: Đường dẫn tới file video
-            
-        Returns:
-            Status message
         """
         if not video_path or not video_path.strip():
             return "❌ Vui lòng nhập đường dẫn video"
@@ -58,12 +52,6 @@ class VideoRAGInterface:
     def answer_question(self, question: str) -> str:
         """
         Trả lời câu hỏi với streaming output
-        
-        Args:
-            question: Câu hỏi của người dùng
-            
-        Returns:
-            Câu trả lời từ LLM
         """
         if self.video_rag is None:
             return "❌ Vui lòng load video trước!"
@@ -94,49 +82,19 @@ def create_interface():
     
     rag_interface = VideoRAGInterface()
     
-    # Custom CSS
-    custom_css = """
-    .header {
-        text-align: center;
-        padding: 20px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 10px;
-        margin-bottom: 20px;
-    }
+    # --- UPDATED: Load Custom CSS from file ---
+    css_file_path = Path(__file__).parent / "styles.css"
+    custom_css = ""
     
-    .status-box {
-        padding: 10px;
-        border-radius: 5px;
-        font-family: monospace;
-        white-space: pre-wrap;
-    }
-    
-    /* Chat history - scrollable */
-    #chat-history {
-        overflow-y: auto;
-        padding: 20px;
-        background-color: #f5f5f5;
-        border-radius: 8px;
-        min-height: 400px;
-        max-height: calc(100vh - 250px);
-    }
-    
-    /* Input container - FIXED at bottom, only in chat area */
-    #input-container {
-        position: fixed;
-        bottom: 0;
-        right: 20px;
-        padding: 15px 20px;
-        background-color: white;
-        border-top: 1px solid #ddd;
-        z-index: 100;
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-        width: calc(100% - 340px);
-        max-width: 1100px;
-        box-sizing: border-box;
-    }
-    """
+    try:
+        with open(css_file_path, "r", encoding="utf-8") as f:
+            custom_css = f.read()
+        print(f"[INFO] Loaded CSS from {css_file_path}")
+    except FileNotFoundError:
+        print(f"[WARNING] Could not find styles.css at {css_file_path}. Using default styles.")
+    except Exception as e:
+        print(f"[ERROR] Error loading CSS: {e}")
+    # ------------------------------------------
     
     with gr.Blocks(title="Video RAG Chat", css=custom_css, theme=gr.themes.Soft()) as interface:
         
@@ -146,7 +104,7 @@ def create_interface():
             with gr.Column(scale=1, min_width=300):
                 # Header
                 gr.HTML("""
-                <div class="header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; padding: 20px; text-align: center; color: white; margin-bottom: 20px;">
+                <div class="header">
                     <h2 style="margin: 0;">🎬 Video RAG</h2>
                     <p style="margin: 5px 0 0 0; font-size: 12px;">Chat with Video</p>
                 </div>
@@ -162,14 +120,7 @@ def create_interface():
                     file_types=["video"]
                 )
                 
-                # Or use text input
-                video_path_input = gr.Textbox(
-                    label="📝 Or Enter Path",
-                    placeholder="/path/to/video.mp4",
-                    interactive=True
-                )
-                
-                load_btn = gr.Button("🔄 Load Video", variant="primary", scale=1)
+                load_btn = gr.Button("Load Video", variant="primary", scale=1)
                 
                 load_status = gr.Textbox(
                     label="Status",
@@ -196,7 +147,7 @@ def create_interface():
                 # Question input
                 question_input = gr.Textbox(
                     label="Your Question",
-                    placeholder="Ask anything about the video... (Enter to send, Shift+Enter for new line)",
+                    placeholder="Ask anything about the video",
                     interactive=True,
                     lines=2,
                     scale=4
@@ -207,20 +158,13 @@ def create_interface():
         
         # ===== INTERACTIONS =====
         
-        def load_video_handler(video_file, video_path):
-            """Handle video loading from file picker or text path"""
-            # Priority: file picker > text input
-            final_path = None
+        def load_video_handler(video_file):
+            """Handle video loading from file picker"""
+            if video_file is None:
+                return "❌ Vui lòng chọn file"
             
-            if video_file is not None:
-                # File was selected from picker
-                final_path = video_file.name if hasattr(video_file, 'name') else str(video_file)
-            elif video_path and video_path.strip():
-                # Text path was entered
-                final_path = video_path.strip()
-            
-            if not final_path:
-                return "❌ Vui lòng chọn file hoặc nhập đường dẫn video"
+            # File was selected from picker
+            final_path = video_file.name if hasattr(video_file, 'name') else str(video_file)
             
             status = rag_interface.load_video(final_path)
             return status
@@ -241,17 +185,20 @@ def create_interface():
             
             # Stream response
             for streamed_response in rag_interface.answer_question(question):
-                new_history = current_history + f"\n**👤 You:**\n> {question}\n\n" + "**🤖 Assistant:**\n\n" + streamed_response
-                yield new_history, ""
+                # Re-construct history with the partial response
+                display_history = new_history + streamed_response
+                yield display_history, ""
             
-            # Add separator
-            new_history += "\n\n---\n"
-            yield new_history, ""
+            # Add separator after done
+            final_history = new_history + list(rag_interface.answer_question(question))[-1] + "\n\n---\n"
+            yield final_history, ""
+            
         
         # Connect load button
+        # Lưu ý: Tôi đã sửa load_video_handler chỉ nhận 1 tham số để khớp với inputs
         load_btn.click(
             fn=load_video_handler,
-            inputs=[video_file_picker, video_path_input],
+            inputs=[video_file_picker],
             outputs=[load_status]
         )
         
