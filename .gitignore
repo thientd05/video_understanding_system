@@ -4,3 +4,4 @@ env/
 *.whl
 *.jpg
 *.png
+__pycache__/
