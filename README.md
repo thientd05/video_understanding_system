@@ -1,0 +1,177 @@
+# Video RAG Chat Interface
+
+Ứng dụng chat với video sử dụng Retrieval Augmented Generation (RAG) và LLM.
+
+## 🚀 Cách chạy
+
+### Option 1: Web Interface (Gradio) - **Khuyến nghị cho Ubuntu**
+
+```bash
+cd /home/thienta/HUST_20235839/AI/video/memory
+./run_web_app.sh
+```
+
+Sau đó mở browser và truy cập: **http://localhost:7860**
+
+### Option 2: Command Line Interface
+
+```bash
+cd /home/thienta/HUST_20235839/AI/video/memory
+PYTHONPATH=$(pwd) ./env/bin/python src/main/main.py --path <video_path> --question "<your_question>"
+```
+
+**Ví dụ:**
+```bash
+PYTHONPATH=$(pwd) ./env/bin/python src/main/main.py \
+  --path test2.mp4 \
+  --question "what did the man say in this video?"
+```
+
+## 📱 Web Interface Features
+
+### Video Loading
+- 📁 Nhập đường dẫn tới file video hoặc sử dụng file picker
+- 🔄 Load & Initialize - tải video và khởi tạo embedding model
+- ✅ Status indicator - hiển thị trạng thái load
+
+### Chat Interface
+- 💬 Chat History - hiển thị toàn bộ lịch sử chat
+- ❓ Question Input - nhập câu hỏi về video
+- 📤 Send Question - gửi câu hỏi (hoặc nhấn Enter)
+- 🤖 Real-time Streaming - xem từng token được sinh ra
+
+### Features
+- ⚡ **Real-time Streaming**: Xem LLM sinh từng token khi đang trả lời
+- 🎬 **Multi-modal**: Kết hợp ASR (audio), OCR (text), và visual (images)
+- 🔍 **RAG-based**: Tìm kiếm context liên quan trước khi sinh câu trả lời
+- 🎨 **Beautiful UI**: Giao diện hiện đại với Gradio
+
+## 🏗️ Architecture
+
+### Components
+
+```
+src/
+├── main/
+│   ├── main.py           # Entry point cho CLI
+│   ├── embedding.py      # EmbeddingManager - xử lý embedding
+│   └── video_rag.py      # VideoRAG - RAG + LLM integration
+├── app/
+│   ├── app.py            # PyQt6 Desktop App (optional)
+│   └── web_app.py        # Gradio Web Interface (recommended)
+└── utils/
+    ├── asr.py            # Speech-to-text
+    ├── ocr.py            # Optical Character Recognition
+    ├── video_processing.py
+    └── choose_frame.py
+```
+
+### Workflow
+
+1. **Video Loading** → `EmbeddingManager`
+   - Xử lý video frames
+   - Thực hiện ASR (transcribe audio)
+   - Thực hiện OCR (extract text from frames)
+   - Embedding all text dùng `SentenceTransformer`
+   - Lưu vào FAISS databases
+
+2. **Question Answering** → `VideoRAG`
+   - Retrieve context - xác định thông tin cần lấy
+   - Search - tìm kiếm relevant transcriptions/OCR texts
+   - Answer - sinh câu trả lời dùng LLM
+   - Streaming - in từng token real-time
+
+## ⚙️ Requirements
+
+- Python 3.10+
+- CUDA-capable GPU (optional, nhưng khuyến nghị)
+- Video files: MP4, AVI, MOV, MKV
+
+### Installed Packages
+
+- `llama-cpp-python` - LLM inference
+- `sentence-transformers` - Embedding model
+- `faiss-cpu` - Vector search
+- `gradio` - Web UI
+- `PyQt6` - Desktop UI (optional)
+- `opencv-python` - Video processing
+- `openai-whisper` - Speech recognition
+- `easyocr` - Text recognition
+
+## 📝 Usage Examples
+
+### Web Interface
+
+1. **Load Video**
+   ```
+   Video Path: /path/to/your/video.mp4
+   Click: Load & Initialize
+   Wait for: ✅ Video loaded successfully!
+   ```
+
+2. **Ask Questions**
+   ```
+   Question: What did the speaker say about AI?
+   Click: Send Question
+   Watch: Answer streams in real-time
+   ```
+
+### CLI
+
+```bash
+# Simple question
+./env/bin/python src/main/main.py \
+  --path video.mp4 \
+  --question "Summarize the video"
+
+# With streaming output
+./env/bin/python src/main/main.py \
+  --path video.mp4 \
+  --question "What are the main points?" \
+  --streaming True
+```
+
+## 🎯 Tips
+
+- **First load**: Sẽ mất 1-5 phút tùy video length
+- **GPU Memory**: Nếu hết GPU memory, hãy giảm `n_gpu_layers` trong `VideoRAG`
+- **Large Videos**: Chia video thành các phần nhỏ hơn
+- **Accuracy**: Prompt engineering ảnh hưởng đến chất lượng câu trả lời
+
+## 🐛 Troubleshooting
+
+### PyQt6 App không mở trên Ubuntu
+- ✅ Dùng Web Interface (Gradio) thay vào - nó hoạt động tốt hơn
+- Nếu cần desktop app, cài X11: `sudo apt-get install xvfb`
+
+### GPU Out of Memory
+- Giảm `n_gpu_layers` từ 12 xuống 8-10
+- Giảm context length `n_ctx` từ 4096 xuống 2048
+
+### Video load không thành công
+- Kiểm tra format video: MP4, AVI, MOV, MKV
+- Kiểm tra đường dẫn file có đúng không
+- Thử convert video: `ffmpeg -i input.video -c:v libx264 output.mp4`
+
+## 📊 Performance
+
+| Task | Time | GPU Memory |
+|------|------|-----------|
+| Load Video (8 frames) | 2-3 min | ~4GB |
+| First Answer | 1-2 min | ~5-6GB |
+| Subsequent Answers | 30-60 sec | ~5-6GB |
+
+## 📚 References
+
+- [Gradio Docs](https://www.gradio.app/)
+- [Sentence Transformers](https://www.sbert.net/)
+- [FAISS](https://github.com/facebookresearch/faiss)
+- [llama-cpp-python](https://github.com/abetlen/llama-cpp-python)
+
+## 📄 License
+
+MIT
+
+---
+
+**Made with ❤️ using AI**
