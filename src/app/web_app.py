@@ -96,11 +96,6 @@ def create_interface():
     
     # Custom CSS
     custom_css = """
-    .container {
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-    
     .header {
         text-align: center;
         padding: 20px;
@@ -110,141 +105,161 @@ def create_interface():
         margin-bottom: 20px;
     }
     
-    .section {
-        padding: 15px;
-        border-radius: 8px;
-        background-color: #f8f9fa;
-        margin-bottom: 15px;
-        border-left: 4px solid #667eea;
-    }
-    
     .status-box {
         padding: 10px;
         border-radius: 5px;
         font-family: monospace;
         white-space: pre-wrap;
     }
+    
+    /* Chat history - scrollable */
+    #chat-history {
+        overflow-y: auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+        border-radius: 8px;
+        min-height: 400px;
+        max-height: calc(100vh - 250px);
+    }
+    
+    /* Input container - FIXED at bottom, only in chat area */
+    #input-container {
+        position: fixed;
+        bottom: 0;
+        right: 20px;
+        padding: 15px 20px;
+        background-color: white;
+        border-top: 1px solid #ddd;
+        z-index: 100;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        width: calc(100% - 340px);
+        max-width: 1100px;
+        box-sizing: border-box;
+    }
     """
     
     with gr.Blocks(title="Video RAG Chat", css=custom_css, theme=gr.themes.Soft()) as interface:
         
-        # Header
-        with gr.Group():
-            gr.HTML("""
-            <div class="header">
-                <h1>🎬 Video RAG Chat Interface</h1>
-                <p>Hỏi đáp về nội dung video bằng AI</p>
-            </div>
-            """)
-        
-        # Video Loading Section
-        gr.Markdown("### 📁 Video Loading")
-        with gr.Group():
-            with gr.Row():
+        # Main layout: Left sidebar + Right chat
+        with gr.Row(equal_height=False):
+            # ===== LEFT SIDEBAR =====
+            with gr.Column(scale=1, min_width=300):
+                # Header
+                gr.HTML("""
+                <div class="header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; padding: 20px; text-align: center; color: white; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">🎬 Video RAG</h2>
+                    <p style="margin: 5px 0 0 0; font-size: 12px;">Chat with Video</p>
+                </div>
+                """)
+                
+                # Video Loading Section
+                gr.Markdown("#### 📁 Load Video")
+                
+                # File picker
+                video_file_picker = gr.File(
+                    label="📂 Select File",
+                    file_count="single",
+                    file_types=["video"]
+                )
+                
+                # Or use text input
                 video_path_input = gr.Textbox(
-                    label="Video Path",
-                    placeholder="Nhập đường dẫn tới file video (e.g., /path/to/video.mp4)",
+                    label="📝 Or Enter Path",
+                    placeholder="/path/to/video.mp4",
+                    interactive=True
+                )
+                
+                load_btn = gr.Button("🔄 Load Video", variant="primary", scale=1)
+                
+                load_status = gr.Textbox(
+                    label="Status",
+                    interactive=False,
+                    lines=4,
+                    elem_classes="status-box",
+                    value="Ready to load..."
+                )
+            
+            # ===== RIGHT CHAT AREA =====
+            with gr.Column(scale=3):
+                # Chat history - using Markdown for proper formatting
+                chat_history = gr.Markdown(
+                    value="🤖 **Assistant ready!** Load a video and ask your questions.\n\n---\n",
+                    label="💬 Chat History",
+                    elem_id="chat-history"
+                )
+            
+            # ===== INPUT BOX - OUTSIDE MAIN ROW, FIXED AT BOTTOM =====
+        
+        # Input section - completely separate, fixed at bottom
+        with gr.Group(elem_id="input-container"):
+            with gr.Row():
+                # Question input
+                question_input = gr.Textbox(
+                    label="Your Question",
+                    placeholder="Ask anything about the video... (Enter to send, Shift+Enter for new line)",
                     interactive=True,
+                    lines=2,
                     scale=4
                 )
-                load_btn = gr.Button("🔄 Load & Initialize", scale=1, variant="primary")
-            
-            load_status = gr.Textbox(
-                label="Status",
-                interactive=False,
-                lines=3,
-                elem_classes="status-box"
-            )
-        
-        # Chat Section
-        gr.Markdown("### 💬 Chat Interface")
-        with gr.Group():
-            # Chat history
-            chat_history = gr.Textbox(
-                label="Chat History",
-                interactive=False,
-                lines=15,
-                max_lines=30,
-                elem_classes="status-box",
-                value="🤖 Assistant ready. Load a video and ask your questions!\n" + "-"*80 + "\n"
-            )
-            
-            # Question input
-            question_input = gr.Textbox(
-                label="Your Question",
-                placeholder="Hỏi bất cứ điều gì về video...",
-                interactive=True,
-                lines=2
-            )
-            
-            # Send button
-            send_btn = gr.Button("📤 Send Question", variant="primary", scale=1)
+                
+                # Send button
+                send_btn = gr.Button("📤 Send", variant="primary", scale=1, visible=False)
         
         # ===== INTERACTIONS =====
         
-        def load_video_handler(video_path):
-            """Handle video loading"""
-            status = rag_interface.load_video(video_path)
+        def load_video_handler(video_file, video_path):
+            """Handle video loading from file picker or text path"""
+            # Priority: file picker > text input
+            final_path = None
+            
+            if video_file is not None:
+                # File was selected from picker
+                final_path = video_file.name if hasattr(video_file, 'name') else str(video_file)
+            elif video_path and video_path.strip():
+                # Text path was entered
+                final_path = video_path.strip()
+            
+            if not final_path:
+                return "❌ Vui lòng chọn file hoặc nhập đường dẫn video"
+            
+            status = rag_interface.load_video(final_path)
             return status
         
         def answer_question_handler(question, current_history):
             """Handle question answering with streaming"""
             if rag_interface.video_rag is None:
-                return current_history + "\n❌ Error: Video not loaded. Please load a video first.\n" + "-"*80 + "\n"
+                return current_history + "\n❌ **Error:** Video not loaded. Please load a video first.\n\n---\n", ""
             
             if not question or not question.strip():
-                return current_history + "\n❌ Error: Please enter a question.\n" + "-"*80 + "\n"
+                return current_history + "\n❌ **Error:** Please enter a question.\n\n---\n", ""
             
-            # Add user question to history
-            new_history = current_history + f"\n👤 You:\n{question}\n\n"
+            # Add user question to history in markdown format
+            new_history = current_history + f"\n**👤 You:**\n> {question}\n\n"
             
             # Start assistant response
-            new_history += "🤖 Assistant:\n"
+            new_history += "**🤖 Assistant:**\n\n"
             
             # Stream response
             for streamed_response in rag_interface.answer_question(question):
-                new_history = current_history + f"\n👤 You:\n{question}\n\n" + "🤖 Assistant:\n" + streamed_response
-                yield new_history
+                new_history = current_history + f"\n**👤 You:**\n> {question}\n\n" + "**🤖 Assistant:**\n\n" + streamed_response
+                yield new_history, ""
             
             # Add separator
-            new_history += "\n" + "-"*80 + "\n"
-            yield new_history
+            new_history += "\n\n---\n"
+            yield new_history, ""
         
         # Connect load button
         load_btn.click(
             fn=load_video_handler,
-            inputs=[video_path_input],
+            inputs=[video_file_picker, video_path_input],
             outputs=[load_status]
-        )
-        
-        # Connect send button
-        send_btn.click(
-            fn=answer_question_handler,
-            inputs=[question_input, chat_history],
-            outputs=[chat_history]
         )
         
         # Allow Enter key to submit question
         question_input.submit(
             fn=answer_question_handler,
             inputs=[question_input, chat_history],
-            outputs=[chat_history]
-        )
-        
-        # Clear question after sending
-        def clear_question():
-            return ""
-        
-        send_btn.click(
-            fn=clear_question,
-            inputs=[],
-            outputs=[question_input]
-        )
-        
-        question_input.submit(
-            fn=clear_question,
-            inputs=[],
-            outputs=[question_input]
+            outputs=[chat_history, question_input]
         )
     
     return interface
