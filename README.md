@@ -50,6 +50,11 @@ src/
     ├── video_processing.py
     └── choose_frame.py
 ```
+### Sample Video
+```
+├── src/
+└── Is_the_future_of_AI_physical_Ian_Bremmer_Explains.mp4      # Sample video
+```
 
 ### Workflow
 
