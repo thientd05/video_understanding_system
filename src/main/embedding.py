@@ -1,3 +1,6 @@
+import json
+import os
+
 import faiss
 from sentence_transformers import SentenceTransformer
 import numpy as np
@@ -22,51 +25,66 @@ class EmbeddingManager:
         
         self.transcriptions_embed = None
         self.texts_embed = None
-        self.dimension = None
         
         self.transcriptions_database = None
         self.texts_database = None
         
         self._create_embeddings()
+        self.save_vector_databases()
+
+    def save_vector_databases(self, output_dir: str | None = None) -> dict:
+        if output_dir is None:
+            output_dir = os.path.dirname(os.path.abspath(__file__))
+
+        os.makedirs(output_dir, exist_ok=True)
+
+        base_name = os.path.splitext(os.path.basename(self.video_path))[0]
+
+        trans_index_path = os.path.join(output_dir, f"{base_name}_transcriptions.index")
+        texts_index_path = os.path.join(output_dir, f"{base_name}_texts.index")
+        meta_path = os.path.join(output_dir, f"{base_name}_meta.json")
+        frames_path = os.path.join(output_dir, f"{base_name}_frames.npz")
+
+        faiss.write_index(self.transcriptions_database, trans_index_path)
+        faiss.write_index(self.texts_database, texts_index_path)
+
+        # Lưu toàn bộ frame (thông tin ảnh) để VideoRAG chỉ cần load lại,
+        # không cần gọi lại video_processing.
+        # frames: list[np.ndarray] cùng shape -> stack thành (N, H, W, C)
+        frames_array = np.stack(self.frames, axis=0)
+        np.savez_compressed(frames_path, frames=frames_array)
+
+        meta = {
+            "video_path": self.video_path,
+            "transcriptions": self.transcriptions,
+            "texts": self.texts,
+        }
+        with open(meta_path, "w", encoding="utf-8") as f:
+            json.dump(meta, f, ensure_ascii=False)
+
+        return {
+            "transcriptions_index": trans_index_path,
+            "texts_index": texts_index_path,
+            "meta": meta_path,
+            "frames": frames_path,
+        }
     
     def _create_embeddings(self):
         self.transcriptions_embed = self.embed_model.encode(
             self.transcriptions, 
             convert_to_numpy=True
-        )
-        self.transcriptions_embed = self.transcriptions_embed.astype("float32")
+        ).astype("float32")
         
         self.texts_embed = self.embed_model.encode(
             self.texts, 
             convert_to_numpy=True
-        )
-        self.texts_embed = self.texts_embed.astype("float32")
+        ).astype("float32")
         
-        self.dimension = self.texts_embed.shape[1]
-        
-        self.transcriptions_database = faiss.IndexFlatL2(self.dimension)
+        self.transcriptions_database = faiss.IndexFlatL2(self.transcriptions_embed.shape[1])
         self.transcriptions_database.add(self.transcriptions_embed)
         
-        self.texts_database = faiss.IndexFlatL2(self.dimension)
+        self.texts_database = faiss.IndexFlatL2(self.texts_embed.shape[1])
         self.texts_database.add(self.texts_embed)
         
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
-    
-    def get_frames(self):
-        return self.frames
-    
-    def get_transcriptions(self):
-        return self.transcriptions
-    
-    def get_texts(self):
-        return self.texts
-    
-    def get_transcriptions_database(self):
-        return self.transcriptions_database
-    
-    def get_texts_database(self):
-        return self.texts_database
-    
-    def get_embed_model(self):
-        return self.embed_model

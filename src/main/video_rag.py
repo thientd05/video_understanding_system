@@ -1,21 +1,19 @@
 import json
 import os
+
+import faiss
+import numpy as np
 import torch
 from llama_cpp import Llama
 from PIL import Image
+
 from src.utils.choose_frame import choose_frame
 
 
 class VideoRAG:
     
-    def __init__(self, embedding_manager):
-        self.embedding_manager = embedding_manager
-        self.embed_model = embedding_manager.get_embed_model()
-        self.frames = embedding_manager.get_frames()
-        self.transcriptions = embedding_manager.get_transcriptions()
-        self.texts = embedding_manager.get_texts()
-        self.transcriptions_database = embedding_manager.get_transcriptions_database()
-        self.texts_database = embedding_manager.get_texts_database()
+    def __init__(self, index_paths: dict = None):
+        self._init_from_files(index_paths)
         
         script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         model_path = os.path.join(script_dir, "gemma-3-4b-it-Q4_K_M.gguf")
@@ -26,8 +24,34 @@ class VideoRAG:
             n_threads=4,
             n_gpu_layers=32
         )
+
+    def _init_from_files(self, index_paths: dict):
+        meta_path = index_paths["meta"]
+        trans_index_path = index_paths["transcriptions_index"]
+        texts_index_path = index_paths["texts_index"]
+        frames_path = index_paths["frames"]
+
+        with open(meta_path, "r", encoding="utf-8") as f:
+            meta = json.load(f)
+
+        self.video_path = meta["video_path"]
+        self.transcriptions = meta["transcriptions"]
+        self.texts = meta["texts"]
+
+        self.transcriptions_database = faiss.read_index(trans_index_path)
+        self.texts_database = faiss.read_index(texts_index_path)
+
+        # Load frames đã lưu (không gọi lại video_processing)
+        frames_npz = np.load(frames_path)
+        frames_array = frames_npz["frames"]
+        # Chuyển về list[np.ndarray] cho tương thích code cũ
+        self.frames = [frame for frame in frames_array]
+
+        from sentence_transformers import SentenceTransformer
+
+        self.embed_model = SentenceTransformer("BAAI/bge-large-en-v1.5", device="cpu")
     
-    def _retrieve_context(self, question):
+    def _rewrite_user_query(self, question):
         system_prompt_retrieve = "You are an helpful assistant, always follow my instructions. To answer the question step by step, you can provide your retrieve request to assist you by the following json format:\n"
         
         system_prompt_retrieve += '''{
@@ -76,18 +100,18 @@ class VideoRAG:
         
         raw = output["choices"][0]["message"]["content"]
         clean = raw.replace("```json", "").replace("```", "").strip()
-        info = json.loads(clean)
+        rewritten_info = json.loads(clean)
         
-        return info
+        return rewritten_info
     
-    def _search_and_build_prompt(self, info):
+    def _retrieval_information(self, rewritten_info):
         asr_prompt = ""
         ocr_prompt = ""
         chosen_frame = self.frames[::len(self.frames) // 5]
         
-        if info.get("ASR") is not None:
+        if rewritten_info.get("ASR") is not None:
             embed = self.embed_model.encode(
-                info["ASR"], 
+                rewritten_info["ASR"], 
                 convert_to_numpy=True
             ).astype("float32")
             embed = embed.reshape(1, -1)
@@ -95,8 +119,8 @@ class VideoRAG:
             for i in indices[0]:
                 asr_prompt += self.transcriptions[i] + "\n"
         
-        if info.get("OCR") is not None:
-            for text in info["OCR"]:
+        if rewritten_info.get("OCR") is not None:
+            for text in rewritten_info["OCR"]:
                 embed = self.embed_model.encode(
                     text, 
                     convert_to_numpy=True
@@ -106,11 +130,16 @@ class VideoRAG:
                 for i in indices[0]:
                     ocr_prompt += self.texts[i] + "\n"
         
-        if info.get("DET") is not None:
-            chosen_frame = choose_frame(frames=self.frames, objects=info["DET"])
+        if rewritten_info.get("DET") is not None:
+            chosen_frame = choose_frame(frames=self.frames, objects=rewritten_info["DET"])
             chosen_frame = chosen_frame[::len(chosen_frame)//5]
             chosen_frame = chosen_frame[:5]
-        
+            
+        frames_dir = os.path.dirname(os.path.abspath(__file__))
+        for idx, frame in enumerate(chosen_frame[:5]):
+            img = Image.fromarray(frame)
+            img.save(os.path.join(frames_dir, f"{idx}.jpg"), format="JPEG")
+
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         
@@ -119,9 +148,9 @@ class VideoRAG:
     def answer_question(self, question, streaming=False):
         formatted_question = "Question: " + question
         
-        info = self._retrieve_context(formatted_question)
+        rewritten_info = self._rewrite_user_query(formatted_question)
         
-        asr_prompt, ocr_prompt, chosen_frame = self._search_and_build_prompt(info)
+        asr_prompt, ocr_prompt, chosen_frame = self._retrieval_information(rewritten_info)
         
         answer_system_prompt = "You are an helpful assistant, always follow my instructions. The users are attempting to ask you some questions relevant to the video. The information about the question is retrieved as follows:\n"
         

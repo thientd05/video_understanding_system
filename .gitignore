@@ -5,3 +5,6 @@ env/
 *.jpg
 *.png
 __pycache__/
+*.json
+*.index
+*.npz

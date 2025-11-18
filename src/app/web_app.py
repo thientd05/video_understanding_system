@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-import gradio as gr
+import json
 import os
 import sys
 from pathlib import Path
+
+import gradio as gr
+import numpy as np
 
 from src.main.embedding import EmbeddingManager
 from src.main.video_rag import VideoRAG
@@ -24,10 +27,56 @@ class VideoRAGInterface:
             return f"❌ File không tồn tại: {video_path}"
         
         try:
-            self.embedding_manager = EmbeddingManager(video_path)   
-            self.video_rag = VideoRAG(self.embedding_manager)
+            project_root = Path(__file__).resolve().parent.parent  # .../src
+            main_dir = project_root / "main"  # .../src/main
+
+            base_name = os.path.splitext(os.path.basename(video_path))[0]
+            trans_index_path = main_dir / f"{base_name}_transcriptions.index"
+            texts_index_path = main_dir / f"{base_name}_texts.index"
+            meta_path = main_dir / f"{base_name}_meta.json"
+            frames_path = main_dir / f"{base_name}_frames.npz"
+
+            if (
+                trans_index_path.exists()
+                and texts_index_path.exists()
+                and meta_path.exists()
+                and frames_path.exists()
+            ):
+                index_paths = {
+                    "transcriptions_index": str(trans_index_path),
+                    "texts_index": str(texts_index_path),
+                    "meta": str(meta_path),
+                    "frames": str(frames_path),
+                }
+
+                with open(meta_path, "r", encoding="utf-8") as f:
+                    meta = json.load(f)
+                frames_npz = np.load(frames_path)
+                frames_array = frames_npz["frames"]
+
+                self.embedding_manager = None
+                self.video_rag = VideoRAG(index_paths=index_paths)
+
+                return (
+                    "✅ Video loaded successfully from existing indexes!\n"
+                    f"Frames: {len(frames_array)}\n"
+                    f"Transcriptions: {len(meta.get('transcriptions', []))}\n"
+                    f"OCR texts: {len(meta.get('texts', []))}"
+                )
+
+            # Nếu chưa có index -> tạo embedding và lưu vector database + metadata + frames
+            self.embedding_manager = EmbeddingManager(video_path)
+            index_paths = self.embedding_manager.save_vector_databases()
+
+            # Khởi tạo VideoRAG từ các file đã lưu
+            self.video_rag = VideoRAG(index_paths=index_paths)
             
-            return f"✅ Video loaded successfully!\nFrames: {len(self.embedding_manager.get_frames())}\nTranscriptions: {len(self.embedding_manager.get_transcriptions())}\nOCR texts: {len(self.embedding_manager.get_texts())}"
+            return (
+                "✅ Video loaded successfully!\n"
+                f"Frames: {len(self.embedding_manager.frames)}\n"
+                f"Transcriptions: {len(self.embedding_manager.transcriptions)}\n"
+                f"OCR texts: {len(self.embedding_manager.texts)}"
+            )
             
         except Exception as e:
             return f"❌ Lỗi khi load video: {str(e)}"
