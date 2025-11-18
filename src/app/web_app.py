@@ -19,12 +19,12 @@ class VideoRAGInterface:
     
     def load_video(self, video_path: str) -> str:
         if not video_path or not video_path.strip():
-            return "❌ Vui lòng nhập đường dẫn video"
+            return "🔴 Please enter a video path"
         
         video_path = video_path.strip()
         
         if not os.path.exists(video_path):
-            return f"❌ File không tồn tại: {video_path}"
+            return f"🔴 File does not exist: {video_path}"
         
         try:
             project_root = Path(__file__).resolve().parent.parent  # .../src
@@ -58,35 +58,35 @@ class VideoRAGInterface:
                 self.video_rag = VideoRAG(index_paths=index_paths)
 
                 return (
-                    "✅ Video loaded successfully from existing indexes!\n"
+                    "🟢 Video loaded successfully\n"
                     f"Frames: {len(frames_array)}\n"
                     f"Transcriptions: {len(meta.get('transcriptions', []))}\n"
                     f"OCR texts: {len(meta.get('texts', []))}"
                 )
 
-            # Nếu chưa có index -> tạo embedding và lưu vector database + metadata + frames
+            # If indexes do not exist yet -> create embeddings and save vector databases + metadata + frames
             self.embedding_manager = EmbeddingManager(video_path)
             index_paths = self.embedding_manager.save_vector_databases()
 
-            # Khởi tạo VideoRAG từ các file đã lưu
+            # Initialize VideoRAG from the saved files
             self.video_rag = VideoRAG(index_paths=index_paths)
             
             return (
-                "✅ Video loaded successfully!\n"
+                "🟢 Video loaded successfully!\n"
                 f"Frames: {len(self.embedding_manager.frames)}\n"
                 f"Transcriptions: {len(self.embedding_manager.transcriptions)}\n"
                 f"OCR texts: {len(self.embedding_manager.texts)}"
             )
             
         except Exception as e:
-            return f"❌ Lỗi khi load video: {str(e)}"
+            return f"🔴 Error while loading video: {str(e)}"
     
     def answer_question(self, question: str) -> str: # type: ignore
         if self.video_rag is None:
-            return "❌ Vui lòng load video trước!"
+            return "🔴 Please load a video first!"
         
         if not question or not question.strip():
-            return "❌ Vui lòng nhập câu hỏi"
+            return "🔴 Please enter a question"
         
         question = question.strip()
         
@@ -97,7 +97,7 @@ class VideoRAGInterface:
                 yield response_text
             
         except Exception as e:
-            yield f"❌ Lỗi khi trả lời: {str(e)}"
+            yield f"🔴 Error while answering: {str(e)}"
 
 
 def create_interface():
@@ -148,7 +148,7 @@ def create_interface():
             with gr.Column(scale=3):
                 
                 chat_history = gr.Markdown(
-                    value="🤖 **Assistant ready!** Load a video and ask your questions.\n\n---\n",
+                    value="🧠 **Assistant ready!** Load a video and ask your questions.\n\n---\n",
                     label="💬 Chat History",
                     elem_id="chat-history"
                 )
@@ -168,7 +168,7 @@ def create_interface():
         
         def load_video_handler(video_file):
             if video_file is None:
-                return "❌ Vui lòng chọn file"
+                return "🔴 Please select a file"
             
             final_path = video_file.name if hasattr(video_file, 'name') else str(video_file)
             
@@ -177,14 +177,14 @@ def create_interface():
         
         def answer_question_handler(question, current_history):
             if rag_interface.video_rag is None:
-                return current_history + "\n❌ **Error:** Video not loaded. Please load a video first.\n\n---\n", ""
+                return current_history + "\n🔴 **Error:** Video not loaded. Please load a video first.\n\n---\n", ""
             
             if not question or not question.strip():
-                return current_history + "\n❌ **Error:** Please enter a question.\n\n---\n", ""
+                return current_history + "\n🔴 **Error:** Please enter a question.\n\n---\n", ""
             
             new_history = current_history + f"\n**👤 You:**\n> {question}\n\n"
             
-            new_history += "**🤖 Assistant:**\n\n"
+            new_history += "**🧠 Assistant:**\n\n"
             
             # Store the final response
             final_response = ""

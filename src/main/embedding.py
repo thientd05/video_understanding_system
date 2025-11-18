@@ -48,9 +48,9 @@ class EmbeddingManager:
         faiss.write_index(self.transcriptions_database, trans_index_path)
         faiss.write_index(self.texts_database, texts_index_path)
 
-        # Lưu toàn bộ frame (thông tin ảnh) để VideoRAG chỉ cần load lại,
-        # không cần gọi lại video_processing.
-        # frames: list[np.ndarray] cùng shape -> stack thành (N, H, W, C)
+        # Save all frames (image data) so that VideoRAG can simply load them
+        # without calling video_processing again.
+        # frames: list[np.ndarray] with the same shape -> stack into (N, H, W, C)
         frames_array = np.stack(self.frames, axis=0)
         np.savez_compressed(frames_path, frames=frames_array)
 

@@ -1,36 +1,36 @@
 # Video RAG Chat Interface
 
-Ứng dụng chat với video sử dụng Retrieval Augmented Generation (RAG) và LLM.
+Chat with videos using Retrieval Augmented Generation (RAG) and an LLM.
 
-## 🚀 Cách chạy
+## 🚀 How to Run
 
-### Web Interface (Gradio) - **Khuyến nghị dùng Ubuntu**
+### Web Interface (Gradio) — **Recommended on Ubuntu**
 
 ```bash
-cd /home/thienta/HUST_20235839/AI/video/memory
+cd ~your_dir # when cloned my repo
 ./run_web_app.sh
 ```
 
-Sau đó mở browser và truy cập: **http://localhost:7860**
+Then open your browser and visit: **http://localhost:7860**
 
 
 ## 📱 Web Interface Features
 
 ### Video Loading
 - 📁 Upload your video file
-- 🔄 Load & Initialize - tải video và khởi tạo embedding model
-- ✅ Status indicator - hiển thị trạng thái load
+- 🔄 Load & Initialize - load the video and initialize the embedding model
+- ✅ Status indicator - display the load status
 
 ### Chat Interface
-- 💬 Chat History - hiển thị toàn bộ lịch sử chat
-- ❓ Question Input - nhập và gửi câu hỏi về video
-- 🤖 Real-time Streaming - xem từng token được sinh ra
+- 💬 Chat History - display the entire conversation
+- ❓ Question Input - enter and send questions about the video
+- 🤖 Real-time Streaming - watch each generated token in real time
 
 ### Features
-- ⚡ **Real-time Streaming**: Xem LLM sinh từng token khi đang trả lời
-- 🎬 **Multi-modal**: Kết hợp ASR (audio), OCR (text), và visual (images)
-- 🔍 **RAG-based**: Tìm kiếm context liên quan trước khi sinh câu trả lời
-- 🎨 **Beautiful UI**: Giao diện hiện đại với Gradio
+- ⚡ **Real-time Streaming**: Watch the LLM emit tokens as it responds
+- 🎬 **Multi-modal**: Combine ASR (audio), OCR (text), and visuals (frames)
+- 🔍 **RAG-based**: Retrieve relevant context before generating the answer
+- 🎨 **Beautiful UI**: Modern interface built with Gradio
 
 ## 🏗️ Architecture
 
@@ -39,7 +39,7 @@ Sau đó mở browser và truy cập: **http://localhost:7860**
 ```
 src/
 ├── main/
-│   ├── embedding.py      # Xử lý embedding
+│   ├── embedding.py      # Embedding processing
 │   └── video_rag.py      # VideoRAG
 ├── app/
 │   ├── styles.css        # Css for UI
@@ -54,22 +54,22 @@ src/
 ### Workflow
 
 1. **Video Loading** → `EmbeddingManager`
-   - Xử lý video frames
-   - Thực hiện ASR (transcribe audio)
-   - Thực hiện OCR (extract text from frames)
-   - Embedding all text dùng `SentenceTransformer`
-   - Lưu vào FAISS databases
+   - Process video frames
+   - Run ASR (transcribe audio)
+   - Run OCR (extract text from frames)
+   - Embed all text with `SentenceTransformer`
+   - Store everything inside FAISS databases
 
 2. **Question Answering** → `VideoRAG`
-   - Retrieve context - xác định thông tin cần lấy
-   - Search - tìm kiếm relevant transcriptions/OCR texts
-   - Answer - sinh câu trả lời dùng LLM
-   - Streaming - in từng token real-time
+   - Retrieve context — determine what information to fetch
+   - Search — find relevant transcriptions/OCR texts
+   - Answer — generate the reply with the LLM
+   - Streaming — print each token in real time
 
 ## ⚙️ Requirements
 
 - Python 3.10+
-- CUDA-capable GPU (optional, nhưng khuyến nghị)
+- CUDA-capable GPU (optional but recommended)
 - Video files: MP4, AVI, MOV, MKV
 
 ### Installed Packages
@@ -82,6 +82,7 @@ src/
 - `opencv-python` - Video processing
 - `openai-whisper` - Speech recognition
 - `easyocr` - Text recognition
+Check the requirements.txt!
 
 ## 📝 Usage Examples
 
@@ -103,28 +104,27 @@ src/
 
 ## 🎯 Tips
 
-- **First load**: Sẽ mất 10-20s tùy video length
-- **GPU Memory**: Nếu hết GPU memory, hãy giảm `n_gpu_layers` trong `VideoRAG`
-- **Large Videos**: Chia video thành các phần nhỏ hơn
-- **Accuracy**: Prompt engineering ảnh hưởng đến chất lượng câu trả lời
+- **First load**: Takes roughly 10–20 seconds depending on video length
+- **GPU Memory**: If you hit GPU memory limits, reduce `n_gpu_layers` in `VideoRAG`
+- **Large Videos**: Split very large videos into smaller chunks
+- **Accuracy**: Prompt engineering has a big impact on answer quality
 
 ## 🐛 Troubleshooting
 
 ### GPU Out of Memory
-- Giảm `n_gpu_layers` từ 12 xuống 8-10
-- Giảm context length `n_ctx` từ 4096 xuống 2048
+- Reduce `n_gpu_layers` from 32 to around under 30
+- Lower the context length `n_ctx` from 4096 to 2048
 
-### Video load không thành công
-- Kiểm tra format video: MP4, AVI, MOV, MKV
-- Thử convert video: `ffmpeg -i input.video -c:v libx264 output.mp4`
+### Video failed to load
+- Verify the video format: MP4, AVI, MOV, MKV
+- Try converting the file: `ffmpeg -i input.video -c:v libx264 output.mp4`
 
 ## 📊 Performance
 
 | Task | Time | GPU Memory |
 |------|------|-----------|
-| Load Video (8 frames) | 8-10 sec | ~4GB |
-| First Answer | 6-9 sec | ~5-6GB |
-| Subsequent Answers | 3-6 sec | ~5-6GB |
+| Load Video (47 frames) | 10-12 sec | ~4GB |
+| Answer | 12-14 sec | ~4GB |
 
 ## 📚 References
 

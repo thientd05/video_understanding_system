@@ -41,10 +41,10 @@ class VideoRAG:
         self.transcriptions_database = faiss.read_index(trans_index_path)
         self.texts_database = faiss.read_index(texts_index_path)
 
-        # Load frames đã lưu (không gọi lại video_processing)
+        # Load previously saved frames (without calling video_processing again)
         frames_npz = np.load(frames_path)
         frames_array = frames_npz["frames"]
-        # Chuyển về list[np.ndarray] cho tương thích code cũ
+        # Convert to list[np.ndarray] for compatibility with existing code
         self.frames = [frame for frame in frames_array]
 
         from sentence_transformers import SentenceTransformer
