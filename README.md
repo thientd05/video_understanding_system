@@ -2,6 +2,8 @@
 
 Chat with videos using Retrieval Augmented Generation (RAG) and an LLM.
 
+### Link demo: https://youtube.com
+
 ## 🚀 How to Run
 
 ### Web Interface (Gradio) — **Recommended on Ubuntu**
