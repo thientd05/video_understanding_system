@@ -33,5 +33,5 @@ def transcribe(audio_path: str) -> list:
     for chunk in chunks:
         ans.append(pipe(chunk)["text"])
     
-    return ans
+    return ans 
     

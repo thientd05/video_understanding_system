@@ -87,4 +87,4 @@ class EmbeddingManager:
         self.texts_database.add(self.texts_embed)
         
         if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+            torch.cuda.empty_cache() 

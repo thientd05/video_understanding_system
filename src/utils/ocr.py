@@ -12,4 +12,4 @@ def ocr_frames(frames: list) -> list:
         for text in texts:
             ans.append(text)
         
-    return ans
+    return ans 

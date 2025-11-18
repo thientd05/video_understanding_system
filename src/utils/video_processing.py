@@ -29,4 +29,4 @@ def video_processing(video_path: str) -> list:
         image = vr[frame].asnumpy()
         ans.append(image)
         
-    return ans
+    return ans 

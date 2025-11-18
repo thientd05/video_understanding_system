@@ -45,4 +45,4 @@ def choose_frame(frames: list, objects: list, threshold=0.2, batch_size=32) -> l
             if score.item() > threshold:
                 ans.append(f)
 
-    return ans
+    return ans 
