@@ -22,7 +22,7 @@ class VideoRAG:
             model_path=model_path,
             n_ctx=2048,
             n_threads=4,
-            n_gpu_layers=32
+            n_gpu_layers=30
         )
 
     def _init_from_files(self, index_paths: dict):

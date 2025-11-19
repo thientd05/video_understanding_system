@@ -2,7 +2,7 @@
 
 Chat with videos using Retrieval Augmented Generation (RAG) and an LLM.
 
-### Link demo: https://youtube.com
+### Demo link: https://youtu.be/ZiRbgEmONZU
 
 ## 🚀 How to Run
 
