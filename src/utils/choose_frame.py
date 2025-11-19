@@ -13,6 +13,9 @@ model, preprocess = clip.load("ViT-B/32", device=device)
 def choose_frame(frames: list, objects: list, threshold=0.2, batch_size=32) -> list:
     ans = []
 
+    if not objects:
+        return ans
+
     text_tokens = clip.tokenize(objects).to(device)
     with torch.no_grad():
         text_features = model.encode_text(text_tokens)

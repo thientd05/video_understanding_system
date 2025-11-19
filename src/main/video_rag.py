@@ -107,7 +107,8 @@ class VideoRAG:
     def _retrieval_information(self, rewritten_info):
         asr_prompt = ""
         ocr_prompt = ""
-        chosen_frame = self.frames[::len(self.frames) // 5]
+        frame_step = max(1, len(self.frames) // 5) if len(self.frames) > 0 else 1
+        chosen_frame = self.frames[::frame_step]
         
         if rewritten_info.get("ASR") is not None:
             embed = self.embed_model.encode(
@@ -130,9 +131,14 @@ class VideoRAG:
                 for i in indices[0]:
                     ocr_prompt += self.texts[i] + "\n"
         
-        if rewritten_info.get("DET") is not None:
-            chosen_frame = choose_frame(frames=self.frames, objects=rewritten_info["DET"])
-            chosen_frame = chosen_frame[::len(chosen_frame)//5]
+        det_objects = rewritten_info.get("DET") or []
+        if len(det_objects) > 0:
+            chosen_frame = choose_frame(frames=self.frames, objects=det_objects)
+            if len(chosen_frame) > 0:
+                det_step = max(1, len(chosen_frame) // 5)
+                chosen_frame = chosen_frame[::det_step]
+            else:
+                chosen_frame = self.frames[::frame_step]
             chosen_frame = chosen_frame[:5]
             
         frames_dir = os.path.dirname(os.path.abspath(__file__))
