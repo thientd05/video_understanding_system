@@ -66,7 +66,7 @@ class EmbeddingManager:
             "transcriptions_index": trans_index_path,
             "texts_index": texts_index_path,
             "meta": meta_path,
-            "frames": frames_path,
+            "frames": frames_path, 
         }
     
     def _create_embeddings(self):
