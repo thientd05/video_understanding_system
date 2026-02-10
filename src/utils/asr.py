@@ -16,7 +16,7 @@ def chunking_audio(audio_path: str, chunk_sec=30) -> list:
     chunk_samples = chunk_sec * sr
     
     for i in range(0, len(audio), chunk_samples):
-        chunks.append(audio[i:i+chunk_samples])
+        chunks.append(audio[i:i+chunk_samples]) 
     
     return chunks
 
