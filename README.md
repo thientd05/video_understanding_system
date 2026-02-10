@@ -36,7 +36,7 @@ Then open your browser and visit: **http://localhost:7860**
 
 ## 🏗️ Architecture
 
-### Components
+### Components 
 
 ```
 src/
