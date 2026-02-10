@@ -204,7 +204,7 @@ def create_interface():
             fn=load_video_handler,
             inputs=[video_file_picker],
             outputs=[load_status],
-            #show_progress="hidden"
+            #show_progress="hidden" 
         )
         
         question_input.submit(
